@@ -9,6 +9,7 @@ elements = partition_pdf(
     DOCUMENT_PATH,
     strategy="hi_res",
     infer_table_structure=True,
+    languages=["chi_sim", "eng"],
 )
 
 category_counts = {}
@@ -24,6 +25,8 @@ for element in elements:
     if category == TABLE_CATEGORY:
         tables.append(element)
 
-print(category_counts)
+print("\n\n", category_counts, "\n\n")
 
-print("\n\n".join([table.metadata.text_as_html for table in tables]))
+for table in tables:
+    print(table, "\n\n")
+    print(table.metadata.text_as_html, "\n\n")
