@@ -1,9 +1,9 @@
-Example PDF parsing using Unstructured.
+# PDF parsing
 
-Build and run the docker image with the document path as variable.
+Make `artifacts` and `outputs` directories for inputs and outputs. These directories are gitignored.
+
+Build and run the docker image with the required environment variables.
 
 ```bash
-docker run --rm -it -e DOCUMENT_PATH="<path/to/document>" $(docker build -q .)
+make run FILENAME=... ARTIFACTS_PATH=... OUTPUTS_PATH=...
 ```
-
-Make a `runs` folder and place PDFs in there to prevent accidental committing of PDFs.

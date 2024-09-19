@@ -1,12 +1,20 @@
+import json
 import os
+from datetime import datetime
+
 from unstructured.partition.pdf import partition_pdf
 
-DOCUMENT_PATH = os.environ["DOCUMENT_PATH"]
-
+ARTIFACTS_PATH = os.environ["ARTIFACTS_PATH"]
+OUTPUTS_PATH = os.environ["OUTPUTS_PATH"]
+FILENAME = os.environ["FILENAME"]
 TABLE_CATEGORY = "<class 'unstructured.documents.elements.Table'>"
 
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+document_path = os.path.join(ARTIFACTS_PATH, FILENAME)
+output_path = os.path.join(OUTPUTS_PATH, f"{FILENAME}_{timestamp}_output.json")
+
 elements = partition_pdf(
-    DOCUMENT_PATH,
+    document_path,
     strategy="hi_res",
     infer_table_structure=True,
     languages=["chi_sim", "eng"],
@@ -25,8 +33,16 @@ for element in elements:
     if category == TABLE_CATEGORY:
         tables.append(element)
 
-print("\n\n", category_counts, "\n\n")
+print("\n\n", category_counts)
 
+res = {"tables": []}
 for table in tables:
-    print(table, "\n\n")
-    print(table.metadata.text_as_html, "\n\n")
+    res["tables"].append(
+        {
+            "text": table.text,
+            "html": table.metadata.text_as_html,
+        }
+    )
+
+with open(output_path, "w") as f:
+    json.dump(res, f)
