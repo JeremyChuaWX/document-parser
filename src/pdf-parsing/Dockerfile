@@ -14,9 +14,11 @@ RUN apt-get install -y \
 
 RUN tesseract --list-langs
 
-RUN pip install "unstructured[local-inference,pdf]"
-
 WORKDIR /app
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
