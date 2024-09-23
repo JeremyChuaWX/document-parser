@@ -33,13 +33,13 @@ def query(text, html):
     {text}
     ```
 
-    The text in the HTML is inaccurate.
-    Using the raw text as the source of truth, replace the text inside `<td></td>` tags with the respective snippets from the raw text.
-    Do not change the table structure. Do not modify any HTML tags. Only replace the text between `<td></td>` tags.
+    Using the raw text as the source of truth, replace the text present within the given HTML blob with the respective snippets from the raw text.
+    Do not change the table structure. Do not modify any HTML tags. Only replace the text.
+    Do not make up text. Fallback to the HTML text if not found in the raw text.
     Return the final HTML after performing the replacements. Do not say any thing else before or after.
     I will KILL MYSELF if you don't only return HTML.
 
-    Example:
+    Example 1:
 
     ```input
     <table><tbody><td></td><td></td><td>"inaccurate text from HTML"</td>...</tbody></table>
@@ -47,6 +47,16 @@ def query(text, html):
 
     ```output
     <table><tbody><td></td><td></td><td>"accurate text from raw text"</td>...</tbody></table>
+    ```
+
+    Example 2:
+
+    ```input
+    <table><tbody><td></td><td></td>"inaccurate text from HTML"<td></td>...</tbody></table>
+    ```
+
+    ```output
+    <table><tbody><td></td><td></td>"accurate text from raw text"<td></td>...</tbody></table>
     ```
     """
     response = client.generate(
