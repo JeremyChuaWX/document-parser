@@ -3,10 +3,17 @@ from ollama import Client
 
 
 class Pipelines:
-    def __init__(self, document_path: str, ollama_address: str) -> None:
+    def __init__(
+        self,
+        document_path: str,
+        ollama_address: str,
+        ollama_model: str,
+    ) -> None:
         self.document_path = document_path
         self.document = PdfReader(document_path)
         self.ollama = Client(host=ollama_address)
+        self.model = ollama_model
+        self.ollama.pull(self.model)
 
     def extract_text(self):
         return "\n\n".join(
@@ -32,16 +39,22 @@ class Pipelines:
         prompt = f"""
         {raw_text}
         """
-        return self.ollama.generate(
-            model="hermes3:8b",
-            prompt=prompt,
-        )
+        return self._generate(prompt)
 
     def filter_information(self, tables: str):
         prompt = f"""
         {tables}
         """
+        return self._generate(prompt)
+
+    def format_information(self, filtered: str):
+        prompt = f"""
+        {filtered}
+        """
+        return self._generate(prompt)
+
+    def _generate(self, prompt):
         return self.ollama.generate(
-            model="hermes3:8b",
+            model=self.model,
             prompt=prompt,
         )

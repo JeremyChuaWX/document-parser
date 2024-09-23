@@ -7,6 +7,8 @@ class Environment:
     OUTPUTS_PATH = os.environ["OUTPUTS_PATH"]
     FILENAME = os.environ["FILENAME"]
     OLLAMA_ADDRESS = os.environ["OLLAMA_ADDRESS"]
+    OLLAMA_MODEL = os.environ["OLLAMA_MODEL"]
+
     DOCUMENT_PATH = os.path.join(ARTIFACTS_PATH, FILENAME)
     OUTPUT_PATH = os.path.join(
         OUTPUTS_PATH,
