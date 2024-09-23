@@ -50,7 +50,7 @@ class Pipeline:
         {tables}
         """
         res = self._generate(prompt)
-        self._save("find_tables", res["response"])
+        self._save("filter_information", res["response"])
         return res
 
     def format_information(self, filtered: str):
@@ -58,8 +58,18 @@ class Pipeline:
         {filtered}
         """
         res = self._generate(prompt)
-        self._save("find_tables", res["response"])
+        self._save("format_information", res["response"])
         return res
+
+    def query_loinc(self, formatted: str):
+        # NOTE: `formatted` should be some sort of structured format (csv, json, ...)
+        # TODO: parses `formatted`, queries for LOINC in vector DB, returns formatted + LOINC
+        pass
+
+    def insert_records(self, loinc: str):
+        # NOTE: `loinc` should be some sort of structured format (csv, json, ...)
+        # TODO: parses `loinc`, save each row to relational DB
+        pass
 
     def _save(self, name: str, data):
         file = os.path.join(
