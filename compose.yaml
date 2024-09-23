@@ -3,6 +3,8 @@ services:
     build: .
     container_name: pipeline
     env_file: .env
+    environment:
+      FILENAME: $FILENAME
     volumes:
       - $ARTIFACTS_PATH:/app/artifacts
       - $OUTPUTS_PATH:/app/outputs
