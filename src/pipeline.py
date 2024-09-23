@@ -2,7 +2,7 @@ from pypdf import PdfReader
 from ollama import Client
 
 
-class Pipelines:
+class Pipeline:
     def __init__(
         self,
         document_path: str,
