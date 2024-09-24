@@ -78,7 +78,7 @@ class Pipeline:
 
         Your task:
         - Convert the tables into CSV format
-        - Make the first row is the header row
+        - Make the first row the header row
         - Reorder columns based on the header row
         - Do not include any summary or other explanations
 
