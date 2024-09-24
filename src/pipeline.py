@@ -11,7 +11,13 @@ class Pipeline:
     def __init__(self) -> None:
         self.document = PdfReader(Environment.DOCUMENT_PATH)
         self.ollama = Client(host=Environment.OLLAMA_ADDRESS)
+        self.save_dir = os.path.join(
+            Environment.OUTPUTS_PATH,
+            f"{Environment.FILENAME.split(".")[0]}_{datetime.now().strftime("%Y%m%d_%H%M%S")}",
+        )
+
         self.ollama.pull(Environment.OLLAMA_MODEL)
+        os.makedirs(self.save_dir, exist_ok=True)
 
     def extract_text(self):
         res = "\n\n".join(
@@ -88,12 +94,7 @@ class Pipeline:
         pass
 
     def _save(self, name: str, data):
-        file = os.path.join(
-            Environment.OUTPUTS_PATH,
-            f"{Environment.FILENAME.split(".")[0]}_{datetime.now().strftime("%Y%m%d_%H%M%S")}",
-            f"{name}.log",
-        )
-        os.makedirs(os.path.dirname(file), exist_ok=True)
+        file = os.path.join(self.save_dir, f"{name}.log")
         with open(file, "w") as f:
             f.write(data)
             print(f"saved: {file}")
