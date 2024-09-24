@@ -96,6 +96,7 @@ class Pipeline:
         os.makedirs(os.path.dirname(file), exist_ok=True)
         with open(file, "w") as f:
             f.write(data)
+            print(f"saved: {file}")
 
     def _generate(self, prompt):
         return self.ollama.generate(
