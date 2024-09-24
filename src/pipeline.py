@@ -32,17 +32,6 @@ class Pipeline:
         self._save("extract_text", res)
         return res
 
-    def extract_text_paginated(self) -> list[str]:
-        res = [
-            page.extract_text(
-                extraction_mode="layout",
-                layout_mode_scale_weight=1.0,
-            )
-            for page in self.document.pages
-        ]
-        self._save("extract_text_paginated", res)
-        return res
-
     def find_tables(self, raw_text: str):
         prompt = f"""
         The following is raw text extracted from a medical PDF:
@@ -50,37 +39,68 @@ class Pipeline:
         {raw_text}
         ```
 
-        Task:
-        Find and return all the tables in the raw text.
+        Your task:
+        - Find and return all tables in the raw text
+        - Delimit tables with triple quotes
+        - Do not include any summary or other explanations
+        - Do not modify the raw text except removing all chinese characters
 
-        Response JSON format:
-        ```json
-        {{
-            "tables": [
-                "<raw text of table>",
-                "<raw text of table>"
-            ]
-        }}
-        ```
+        Take note:
+        - Ensure tables have header rows
+
+        Output format:
+        '''
+        <table 1>
+        '''
+
+        '''
+        <table 2>
+        '''
         """
         res = self._generate(prompt)
-        self._save("find_tables", res["response"])
+        self._save("find_tables", res)
         return res
 
-    def filter_information(self, tables: str):
+    def format_tables(self, tables: str):
+        prompt = f"""
+        The following are multiple tables delimited by triple quotes:
+
+        {tables}
+
+        They have the following format:
+        '''
+        <table 1>
+        '''
+
+        '''
+        <table 2>
+        '''
+
+        Your task:
+        - Convert the tables into CSV format
+        - Make the first row is the header row
+        - Reorder columns based on the header row
+        - Do not include any summary or other explanations
+
+        Your example output:
+        '''
+        <csv of table 1>
+        '''
+
+        '''
+        <csv of table 2>
+        '''
+        """
+        res = self._generate(prompt)
+        self._save("format_tables", res)
+        return res
+
+    def filter_tables(self, tables: str):
         prompt = f"""
         {tables}
         """
         res = self._generate(prompt)
-        self._save("filter_information", res["response"])
-        return res
-
-    def format_information(self, filtered: str):
-        prompt = f"""
-        {filtered}
-        """
-        res = self._generate(prompt)
-        self._save("format_information", res["response"])
+        self._save("filter_tables", res)
         return res
 
     def query_loinc(self, formatted: str):
@@ -99,12 +119,12 @@ class Pipeline:
             f.write(data)
             print(f"saved: {file}")
 
-    def _generate(self, prompt):
+    def _generate(self, prompt, json=False):
         return self.ollama.generate(
             model=Environment.OLLAMA_MODEL,
             prompt=prompt,
-            format="json",
+            format="json" if json else "",
             options={
                 "temperature": 0.0,
             },
-        )
+        )["response"]
