@@ -39,7 +39,23 @@ class Pipeline:
 
     def find_tables(self, raw_text: str):
         prompt = f"""
+        The following is raw text extracted from a medical PDF:
+        ```text
         {raw_text}
+        ```
+
+        Task:
+        Find and return all the tables in the raw text.
+
+        Response JSON format:
+        ```json
+        {{
+            "tables": [
+                "<raw text of table>",
+                "<raw text of table>"
+            ]
+        }}
+        ```
         """
         res = self._generate(prompt)
         self._save("find_tables", res["response"])
@@ -85,4 +101,8 @@ class Pipeline:
         return self.ollama.generate(
             model=Environment.OLLAMA_MODEL,
             prompt=prompt,
+            format="json",
+            options={
+                "temperature": 0.0,
+            },
         )
