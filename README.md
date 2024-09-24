@@ -7,6 +7,9 @@
 
 ## Setup
 
+- Create the following directories at the project root
+  - `artifacts/`
+  - `outputs/`
 - Copy `.env.example` and rename to `.env`
 - Fill in the appropriate values in `.env`
 
