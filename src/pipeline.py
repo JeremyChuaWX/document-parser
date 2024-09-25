@@ -32,6 +32,17 @@ class Pipeline:
         self._save("extract_text", res)
         return res
 
+    def extract_text_paginated(self):
+        res = [
+            page.extract_text(
+                extraction_mode="layout",
+                layout_mode_scale_weight=1.0,
+            )
+            for page in self.document.pages
+        ]
+        self._save("extract_text_paginated", res)
+        return res
+
     def find_tables(self, raw_text: str):
         prompt = f"""
         The following is raw text extracted from a medical PDF:
@@ -113,13 +124,13 @@ class Pipeline:
         # TODO: parses `loinc`, save each row to relational DB
         pass
 
-    def _save(self, name: str, data):
+    def _save(self, name: str, data: str):
         file = os.path.join(self.save_dir, f"{name}.log")
         with open(file, "w") as f:
             f.write(data)
             print(f"saved: {file}")
 
-    def _generate(self, prompt, json=False):
+    def _generate(self, prompt: str, json=False):
         return self.ollama.generate(
             model=Environment.OLLAMA_MODEL,
             prompt=prompt,
