@@ -51,13 +51,14 @@ class Pipeline:
         ```
 
         Your task:
-        - Find and return all tables in the raw text
+        - Find and return tables in the raw text
         - Delimit tables with triple quotes
         - Do not include any summary or other explanations
         - Do not modify the raw text except removing all chinese characters
 
         Take note:
         - Ensure tables have header rows
+        - I am looking for tables that contain measurements and results of patients
 
         Output format:
         '''
@@ -93,7 +94,7 @@ class Pipeline:
         - Reorder columns based on the header row
         - Do not include any summary or other explanations
 
-        Your example output:
+        Output format:
         '''
         <csv of table 1>
         '''
