@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from functools import wraps
 
 from ollama import Client
 from pypdf import PdfReader
@@ -7,8 +8,21 @@ from pypdf import PdfReader
 from environment import Environment
 
 
+def save_output(func):
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        result = func(self, *args, **kwargs)
+        file = os.path.join(self.save_dir, f"{func.__name__}.log")
+        with open(file, "w") as f:
+            f.write(result if isinstance(result, str) else str(result))
+            print(f"saved: {file}")
+        return result
+
+    return wrapper
+
+
 class Pipeline:
-    def __init__(self) -> None:
+    def __init__(self):
         self.document = PdfReader(Environment.DOCUMENT_PATH)
         self.ollama = Client(host=Environment.OLLAMA_ADDRESS)
         self.save_dir = os.path.join(
@@ -19,8 +33,9 @@ class Pipeline:
         self.ollama.pull(Environment.OLLAMA_MODEL)
         os.makedirs(self.save_dir, exist_ok=True)
 
+    @save_output
     def extract_text(self):
-        res = "\n\n".join(
+        return "\n\n".join(
             [
                 page.extract_text(
                     extraction_mode="layout",
@@ -29,20 +44,18 @@ class Pipeline:
                 for page in self.document.pages
             ]
         )
-        self._save("extract_text", res)
-        return res
 
+    @save_output
     def extract_text_paginated(self):
-        res = [
+        return [
             page.extract_text(
                 extraction_mode="layout",
                 layout_mode_scale_weight=1.0,
             )
             for page in self.document.pages
         ]
-        self._save("extract_text_paginated", res)
-        return res
 
+    @save_output
     def find_tables(self, raw_text: str):
         prompt = f"""
         The following is raw text extracted from a medical PDF:
@@ -69,10 +82,9 @@ class Pipeline:
         <table 2>
         '''
         """
-        res = self._generate(prompt)
-        self._save("find_tables", res)
-        return res
+        return self._generate(prompt)
 
+    @save_output
     def format_tables(self, tables: str):
         prompt = f"""
         The following are multiple tables delimited by triple quotes:
@@ -103,17 +115,14 @@ class Pipeline:
         <csv of table 2>
         '''
         """
-        res = self._generate(prompt)
-        self._save("format_tables", res)
-        return res
+        return self._generate(prompt)
 
+    @save_output
     def filter_tables(self, tables: str):
         prompt = f"""
         {tables}
         """
-        res = self._generate(prompt)
-        self._save("filter_tables", res)
-        return res
+        return self._generate(prompt)
 
     def query_loinc(self, formatted: str):
         # NOTE: `formatted` should be some sort of structured format (csv, json, ...)
@@ -124,12 +133,6 @@ class Pipeline:
         # NOTE: `loinc` should be some sort of structured format (csv, json, ...)
         # TODO: parses `loinc`, save each row to relational DB
         pass
-
-    def _save(self, name: str, data: str):
-        file = os.path.join(self.save_dir, f"{name}.log")
-        with open(file, "w") as f:
-            f.write(data)
-            print(f"saved: {file}")
 
     def _generate(self, prompt: str, json=False):
         return self.ollama.generate(
