@@ -65,20 +65,26 @@ class Pipeline:
 
         Your task:
         - Find and return tables in the raw text
-        - Delimit tables with triple quotes
+        - Find the titles that summarise the contents of the tables
+        - Return all columns and rows in the tables
         - Do not include any summary or other explanations
         - Do not modify the raw text except removing all chinese characters
 
         Take note:
         - Ensure tables have header rows
         - I am looking for tables that contain measurements and results of patients
+        - Do not hallucinate or generate any text, only take lines from the raw text
 
         Output format:
         '''
+        <title for table 1>
+
         <table 1>
         '''
 
         '''
+        <title for table 2>
+
         <table 2>
         '''
         """
