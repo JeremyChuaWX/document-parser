@@ -1,7 +1,9 @@
+import json
 import os
 from datetime import datetime
 from functools import wraps
 
+import pandas as pd
 from ollama import Client
 from pypdf import PdfReader
 
@@ -132,11 +134,60 @@ class Pipeline:
         return self._generate(prompt)
 
     @save_output
-    def filter_tables(self, tables: str):
+    def parse_tables(self, tables: str):
         prompt = f"""
+        The following are multiple tables delimited by triple quotes:
+
         {tables}
+
+        They have the following format:
+        '''
+        <title for table 1>
+
+        <csv of table 1>
+        '''
+
+        '''
+        <title for table 2>
+
+        <csv of table 2>
+        '''
+
+        Your task:
+        - Return the tables in JSON format described below
+        - Do not include any summary or other explanations
+
+        JSON format:
+        {{
+            "tables": [
+                {{
+                    "title": "<title for table 1>",
+                    "table": [
+                        [...],
+                        [...],
+                        ...
+                    ]
+                }},
+                {{
+                    "title": "<title for table 2>",
+                    "table": [
+                        [...],
+                        [...],
+                        ...
+                    ]
+                }},
+                ...
+            ]
+        }}
         """
-        return self._generate(prompt)
+        return self._generate(prompt, json=True)
+
+    def to_dataframes(self, tables: str):
+        dfs = json.loads(tables)["tables"]
+        for df in dfs:
+            df["table"] = pd.DataFrame(df["table"])
+        return dfs
+
 
     def query_loinc(self, formatted: str):
         # NOTE: `formatted` should be some sort of structured format (csv, json, ...)

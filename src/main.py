@@ -7,6 +7,8 @@ def main():
     raw_text = pipeline.extract_text()
     tables = pipeline.find_tables(raw_text)
     formatted = pipeline.format_tables(tables)
+    parsed = pipeline.parse_tables(formatted)
+    dataframes = pipeline.to_dataframes(parsed)
     # filtered = pipeline.filter_information(tables)
 
 
