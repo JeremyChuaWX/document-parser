@@ -99,10 +99,14 @@ class Pipeline:
 
         They have the following format:
         '''
+        <title for table 1>
+
         <table 1>
         '''
 
         '''
+        <title for table 2>
+
         <table 2>
         '''
 
@@ -114,10 +118,14 @@ class Pipeline:
 
         Output format:
         '''
+        <title for table 1>
+
         <csv of table 1>
         '''
 
         '''
+        <title for table 2>
+
         <csv of table 2>
         '''
         """
