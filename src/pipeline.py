@@ -60,24 +60,30 @@ class Pipeline:
     @save_output
     def find_tables(self, raw_text: str):
         prompt = f"""
+        You are part of a data processing pipeline.
+
         The following is raw text extracted from a medical PDF:
         ```text
         {raw_text}
         ```
 
         Your task:
-        - Find and return tables in the raw text
+        - Find and return all tables in the raw text
         - Find the titles that summarise the contents of the tables
         - Return all columns and rows in the tables
-        - Do not include any summary or other explanations
+        - Do not include any summary or other explanations other than the space provided
         - Do not modify the raw text except removing all chinese characters
 
         Take note:
         - Ensure tables have header rows
-        - I am looking for tables that contain measurements and results of patients
+        - I am looking for tables that contain measurements of patients
         - Do not hallucinate or generate any text, only take lines from the raw text
 
         Output format:
+        {{
+        Use this space for you to reason about the task and complete it.
+        }}
+
         '''
         <title for table 1>
 
