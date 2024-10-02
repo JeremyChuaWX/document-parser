@@ -62,7 +62,8 @@ class Pipeline:
         prompt = f"""
         You are part of a data processing pipeline.
 
-        The following is raw text extracted from a medical PDF:
+        The following is a page of raw text extracted from a medical PDF:
+
         ```text
         {raw_text}
         ```
@@ -71,7 +72,7 @@ class Pipeline:
         - Find and return all tables in the raw text
         - Find the titles that summarise the contents of the tables
         - Return all columns and rows in the tables
-        - Do not include any summary or other explanations other than the space provided
+        - Do not include any summary or other explanations
         - Do not modify the raw text except removing all chinese characters
 
         Take note:
@@ -80,9 +81,6 @@ class Pipeline:
         - Do not hallucinate or generate any text, only take lines from the raw text
 
         Output format:
-        {{
-        Use this space for you to reason about the task and complete it.
-        }}
 
         '''
         <title for table 1>
@@ -101,6 +99,8 @@ class Pipeline:
     @save_output
     def format_tables(self, tables: str):
         prompt = f"""
+        You are part of a data processing pipeline.
+
         The following are multiple tables delimited by triple quotes:
 
         {tables}
@@ -142,6 +142,8 @@ class Pipeline:
     @save_output
     def parse_tables(self, tables: str):
         prompt = f"""
+        You are part of a data processing pipeline.
+
         The following are multiple tables delimited by triple quotes:
 
         {tables}
