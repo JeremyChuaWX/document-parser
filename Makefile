@@ -24,3 +24,7 @@ start:
 stop:
 	docker compose down --remove-orphans --volumes
 	docker image prune -f
+
+.PHONY: clean
+clean:
+	rm -rf ${SQL_DB_DATA_PATH}

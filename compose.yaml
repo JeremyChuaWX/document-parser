@@ -2,9 +2,36 @@ services:
   pipeline:
     build: .
     container_name: pipeline
+    depends_on:
+      sql_db.migrate:
+        condition: service_completed_successfully
     env_file: .env
     environment:
       FILENAME: $FILENAME
     volumes:
       - $ARTIFACTS_PATH:/app/artifacts
       - $OUTPUTS_PATH:/app/outputs
+
+  sql_db:
+    container_name: sql_db
+    env_file: .env
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "$MYSQL_USER", "--password=$MYSQL_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    image: mysql
+    ports:
+      - "3306:3306"
+    volumes:
+      - $SQL_DB_DATA_PATH:/var/lib/mysql
+
+  sql_db.migrate:
+    command: ["-path", "/migrations", "-database", "$SQL_DB_MIGRATE_URI", "up"]
+    container_name: sql_db.migrate
+    depends_on:
+      sql_db:
+        condition: service_healthy
+    image: migrate/migrate
+    volumes:
+      - $SQL_DB_MIGRATIONS_PATH:/migrations
