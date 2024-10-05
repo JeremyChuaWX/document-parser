@@ -2,16 +2,24 @@
 
 ## Dependencies
 
+- Make
 - Docker
 - Ollama
 
 ## Setup
 
-- Create the following directories at the project root
-  - `artifacts/`
-  - `outputs/`
-- Copy `.env.example` and rename to `.env`
-- Fill in the appropriate values in `.env`
+- Run this command to setup the project
+  ```bash
+  make setup
+  ```
+  - Create the following directories at the project root
+    - `artifacts/`
+    - `outputs/`
+  - Copy `.env.example` and rename to `.env`
+- Run this command to initialise the vector database with LOINC embeddings
+  ```bash
+  make vector_db
+  ```
 
 ## Usage
 
