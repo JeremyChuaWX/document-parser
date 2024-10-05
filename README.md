@@ -12,10 +12,10 @@
   ```bash
   make setup
   ```
-  - Create the following directories at the project root
+  - Creates the following directories at the project root
     - `artifacts/`
     - `outputs/`
-  - Copy `.env.example` and rename to `.env`
+  - Copies `.env.example` and renames to `.env`
 - Run this command to initialise the vector database with LOINC embeddings
   ```bash
   make vector_db
