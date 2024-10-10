@@ -6,6 +6,9 @@ from functools import wraps
 import chromadb
 import ollama
 import pandas as pd
+import pymysql
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
 from pypdf import PdfReader
 
 from environment import Environment
@@ -26,9 +29,21 @@ def save_output(func):
 
 class Pipeline:
     def __init__(self):
+        pymysql.install_as_MySQLdb()
+
         self.document = PdfReader(Environment.DOCUMENT_PATH)
         self.ollama = ollama.Client(host=Environment.OLLAMA_ADDRESS)
         self.chroma = chromadb.HttpClient(host=Environment.CHROMA_HOST)
+        self.session = sessionmaker(
+            bind=create_engine(
+                Environment.MYSQL_ADDRESS,
+                pool_size=5,
+                max_overflow=10,
+                pool_timeout=30,
+                pool_recycle=3600,
+                connect_args={"connect_timeout": 5},
+            )
+        )
         self.save_dir = os.path.join(
             Environment.OUTPUTS_PATH,
             f"{Environment.FILENAME.split(".")[0]}_{datetime.now().strftime("%Y%m%d_%H%M%S")}",
@@ -207,8 +222,10 @@ class Pipeline:
         return result
 
     def insert_records(self, loinc: str, data: str):
-        # NOTE: `loinc` should be some sort of structured format (csv, json, ...)
-        # TODO: parses `loinc`, save each row to relational DB
+        # TODO: insert report, insert tests
+        sql_query = text("%s")
+        with self.session() as session:
+            session.execute(sql_query, [loinc, data])
         pass
 
     def _generate(self, prompt: str, json=False):

@@ -1,4 +1,6 @@
 chromadb
 ollama
 pandas
+pymysql
 pypdf
+sqlalchemy
