@@ -3,8 +3,9 @@ import os
 from datetime import datetime
 from functools import wraps
 
+import chromadb
+import ollama
 import pandas as pd
-from ollama import Client
 from pypdf import PdfReader
 
 from environment import Environment
@@ -26,7 +27,8 @@ def save_output(func):
 class Pipeline:
     def __init__(self):
         self.document = PdfReader(Environment.DOCUMENT_PATH)
-        self.ollama = Client(host=Environment.OLLAMA_ADDRESS)
+        self.ollama = ollama.Client(host=Environment.OLLAMA_ADDRESS)
+        self.chroma = chromadb.HttpClient(host=Environment.CHROMA_HOST)
         self.save_dir = os.path.join(
             Environment.OUTPUTS_PATH,
             f"{Environment.FILENAME.split(".")[0]}_{datetime.now().strftime("%Y%m%d_%H%M%S")}",
@@ -196,13 +198,15 @@ class Pipeline:
             df["table"] = pd.DataFrame(df["table"])
         return dfs
 
+    def query_loinc(self, category: str, test: str, unit: str) -> str:
+        """
+        Combine metadata of an extracted row from a table and query the vector database for the associated LOINC.
+        """
+        query = f"{category},{test}. Units: {unit}"
+        result = self.chroma.query(query)  # TODO: fix this
+        return result
 
-    def query_loinc(self, formatted: str):
-        # NOTE: `formatted` should be some sort of structured format (csv, json, ...)
-        # TODO: parses `formatted`, queries for LOINC in vector DB, returns formatted + LOINC
-        pass
-
-    def insert_records(self, loinc: str):
+    def insert_records(self, loinc: str, data: str):
         # NOTE: `loinc` should be some sort of structured format (csv, json, ...)
         # TODO: parses `loinc`, save each row to relational DB
         pass

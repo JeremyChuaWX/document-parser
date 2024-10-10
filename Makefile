@@ -27,4 +27,4 @@ stop:
 
 .PHONY: clean
 clean:
-	rm -rf ${SQL_DB_DATA_PATH}
+	rm -rf ${SQL_DB_DATA_PATH} ${VECTOR_DB_DATA_PATH}
