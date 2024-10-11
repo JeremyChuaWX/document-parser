@@ -37,17 +37,17 @@ services:
       sql_db:
         condition: service_healthy
     image: migrate/migrate
-    profiles: [mirgate]
+    profiles: [migrate]
     volumes:
       - $SQL_DB_MIGRATIONS_PATH:/migrations
 
   vector_db:
     container_name: vector_db
     environment:
-      IS_PERSISTENT: TRUE
-      ANONYMIZED_TELEMETRY: TRUE
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=TRUE
     healthcheck:
-      test: [ "CMD", "/bin/bash", "-c", "cat < /dev/null > /dev/tcp/localhost/8001" ]
+      test: [ "CMD", "/bin/bash", "-c", "cat < /dev/null > /dev/tcp/localhost/8000" ]
       interval: 30s
       timeout: 10s
       retries: 3

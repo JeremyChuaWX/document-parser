@@ -10,8 +10,7 @@ setup:
 
 .PHONY: migrate
 migrate:
-	docker compose --profile migrate up --build -d
-	docker compose --profile migrate down --remove-orphans --volumes
+	docker compose --profile migrate up --build
 
 .PHONY: ollama
 ollama:
@@ -23,7 +22,7 @@ start:
 
 .PHONY: stop
 stop:
-	docker compose --profile app down --remove-orphans --volumes
+	docker compose --profile migrate --profile app down --remove-orphans --volumes
 	docker image prune -f
 
 .PHONY: clean
