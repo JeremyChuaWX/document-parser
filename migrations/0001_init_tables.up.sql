@@ -1,4 +1,4 @@
-CREATE TABLE reports (
+CREATE TABLE IF NOT EXISTS reports (
     id BINARY(16) DEFAULT (UUID_TO_BIN(UUID())),
     report_id VARCHAR(255),
     lab_name VARCHAR(255),
@@ -10,7 +10,7 @@ CREATE TABLE reports (
     PRIMARY KEY (id)
 );
 
-CREATE TABLE tests (
+CREATE TABLE IF NOT EXISTS tests (
     report_id BINARY(16),
     id INT AUTO_INCREMENT,
     test_name VARCHAR(255),
