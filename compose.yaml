@@ -3,11 +3,14 @@ services:
     build: .
     container_name: pipeline
     depends_on:
-      sql_db.migrate:
-        condition: service_completed_successfully
+      sql_db:
+        condition: service_healthy
+      vector_db:
+        condition: service_healthy
     env_file: .env
     environment:
       FILENAME: $FILENAME
+    profiles: [app]
     volumes:
       - $ARTIFACTS_PATH:/app/artifacts
       - $OUTPUTS_PATH:/app/outputs
@@ -23,6 +26,7 @@ services:
     image: mysql
     ports:
       - "3306:3306"
+    profiles: [app,migrate]
     volumes:
       - $SQL_DB_DATA_PATH:/var/lib/mysql
 
@@ -33,5 +37,34 @@ services:
       sql_db:
         condition: service_healthy
     image: migrate/migrate
+    profiles: [mirgate]
     volumes:
       - $SQL_DB_MIGRATIONS_PATH:/migrations
+
+  vector_db:
+    container_name: vector_db
+    environment:
+      IS_PERSISTENT: TRUE
+      ANONYMIZED_TELEMETRY: TRUE
+    healthcheck:
+      test: [ "CMD", "/bin/bash", "-c", "cat < /dev/null > /dev/tcp/localhost/8001" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    image: chromadb/chroma
+    ports:
+      - "8000:8000"
+    profiles: [app,migrate]
+    volumes:
+      - $VECTOR_DB_DATA_PATH:/chroma/chroma
+
+  vector_db.migrate:
+    build: ./scripts/vector_db_migrate/
+    container_name: vector_db.migrate
+    depends_on:
+      vector_db:
+        condition: service_healthy
+    env_file: .env
+    profiles: [migrate]
+    volumes:
+      - $ARTIFACTS_PATH:/app/artifacts

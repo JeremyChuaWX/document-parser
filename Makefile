@@ -4,25 +4,26 @@ export
 .PHONY: setup
 setup:
 	echo "creating artifacts and outputs directories ..."
-	@mkdir artifacts outputs
+	mkdir artifacts outputs
 	echo "initialising example .env file ..."
-	@cp .env.example .env
+	cp .env.example .env
 
-.PHONY: vector_db
-vector_db:
-	echo "initialising vector database ..."
+.PHONY: migrate
+migrate:
+	docker compose --profile migrate up --build -d
+	docker compose --profile migrate down --remove-orphans --volumes
 
 .PHONY: ollama
 ollama:
-	@ollama serve
+	ollama serve
 
 .PHONY: start
 start:
-	docker compose up --build
+	docker compose --profile app up --build
 
 .PHONY: stop
 stop:
-	docker compose down --remove-orphans --volumes
+	docker compose --profile app down --remove-orphans --volumes
 	docker image prune -f
 
 .PHONY: clean
