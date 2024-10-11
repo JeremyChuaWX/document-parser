@@ -1,15 +1,18 @@
 import pandas as pd
 import chromadb
+import os
 
-FILE_PATH = "C:/Users/brand/OneDrive/Documents/BT4103/Loinc.csv"
+CHROMA_HOST = os.environ["CHROMA_HOST"]
+CHROMA_COLLECTION = os.environ["CHROMA_COLLECTION"]
+
+FILE_PATH = "loinc.csv"
 COLUMNS = ["LOINC_NUM", "LONG_COMMON_NAME", "EXAMPLE_UNITS"]
-COLLECTION_NAME = "loinc_embeddings"
 BATCH_SIZE = 100
 
 
 def main():
-    client = chromadb.HttpClient(host="vector_db")
-    collection = client.get_or_create_collection(name=COLLECTION_NAME)
+    client = chromadb.HttpClient(host=CHROMA_HOST)
+    collection = client.get_or_create_collection(name=CHROMA_COLLECTION)
 
     if collection.count() > 0:
         print("collection is not empty")
@@ -29,6 +32,7 @@ def main():
 
     for batch in batches:
         process_batch(batch)
+        print("batch processed", collection.count())
 
     print("collection populated")
 

@@ -7,11 +7,10 @@ import chromadb
 import ollama
 import pandas as pd
 import pymysql
+from environment import Environment
+from pypdf import PdfReader
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from pypdf import PdfReader
-
-from environment import Environment
 
 
 def save_output(func):
@@ -32,8 +31,16 @@ class Pipeline:
         pymysql.install_as_MySQLdb()
 
         self.document = PdfReader(Environment.DOCUMENT_PATH)
+
         self.ollama = ollama.Client(host=Environment.OLLAMA_ADDRESS)
-        self.chroma = chromadb.HttpClient(host=Environment.CHROMA_HOST)
+        self.ollama.pull(Environment.OLLAMA_MODEL)
+
+        self.collection = chromadb.HttpClient(
+            host=Environment.CHROMA_HOST,
+        ).get_collection(
+            Environment.CHROMA_COLLECTION,
+        )
+
         self.session = sessionmaker(
             bind=create_engine(
                 Environment.MYSQL_ADDRESS,
@@ -44,12 +51,11 @@ class Pipeline:
                 connect_args={"connect_timeout": 5},
             )
         )
+
         self.save_dir = os.path.join(
             Environment.OUTPUTS_PATH,
             f"{Environment.FILENAME.split(".")[0]}_{datetime.now().strftime("%Y%m%d_%H%M%S")}",
         )
-
-        self.ollama.pull(Environment.OLLAMA_MODEL)
         os.makedirs(self.save_dir, exist_ok=True)
 
     @save_output
@@ -218,7 +224,7 @@ class Pipeline:
         Combine metadata of an extracted row from a table and query the vector database for the associated LOINC.
         """
         query = f"{category},{test}. Units: {unit}"
-        result = self.chroma.query(query)  # TODO: fix this
+        result = self.collection.get(query)  # TODO: fix this
         return result
 
     def insert_records(self, loinc: str, data: str):
