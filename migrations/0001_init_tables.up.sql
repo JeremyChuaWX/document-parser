@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS reports (
 
 CREATE TABLE IF NOT EXISTS tests (
     report_id BINARY(16),
-    id INT AUTO_INCREMENT,
+    id BINARY(16) DEFAULT (UUID_TO_BIN(UUID())),
     test_name VARCHAR(255),
     category VARCHAR(255),
     test_result VARCHAR(255),
