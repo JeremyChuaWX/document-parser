@@ -1,6 +1,8 @@
-import pandas as pd
-import chromadb
+import gc
 import os
+
+import chromadb
+import pandas as pd
 
 CHROMA_HOST = os.environ["CHROMA_HOST"]
 CHROMA_COLLECTION = os.environ["CHROMA_COLLECTION"]
@@ -20,19 +22,19 @@ def main():
 
     batches = pd.read_csv(FILE_PATH, usecols=COLUMNS, chunksize=BATCH_SIZE)
 
-    def process_batch(batch):
-        batch["combined"] = batch.apply(
+    for i, batch in enumerate(batches, 1):
+        combined = batch.apply(
             lambda row: f"{row['LONG_COMMON_NAME']}. Unit: {row['EXAMPLE_UNITS']}",
             axis=1,
-        )
+        ).tolist()
+        ids = batch["LOINC_NUM"].tolist()
         collection.add(
-            documents=batch["combined"].tolist(),
-            ids=batch["LOINC_NUM"].tolist(),
+            documents=combined,
+            ids=ids,
         )
-
-    for batch in batches:
-        process_batch(batch)
-        print("batch processed", collection.count())
+        print(f"batch {i} processed, collection count: {collection.count()}")
+        del combined, ids, batch
+        gc.collect()
 
     print("collection populated")
 
