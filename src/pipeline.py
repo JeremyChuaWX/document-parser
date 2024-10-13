@@ -1,7 +1,8 @@
-import json
+import json as j
 import os
 from datetime import datetime
 from functools import wraps
+from io import StringIO
 
 import chromadb
 import ollama
@@ -9,7 +10,6 @@ import pandas as pd
 import pymysql
 from pypdf import PdfReader
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
 
 from environment import Environment
 
@@ -42,20 +42,18 @@ class Pipeline:
             Environment.CHROMA_COLLECTION,
         )
 
-        self.session = sessionmaker(
-            bind=create_engine(
-                Environment.MYSQL_ADDRESS,
-                pool_size=5,
-                max_overflow=10,
-                pool_timeout=30,
-                pool_recycle=3600,
-                connect_args={"connect_timeout": 5},
-            )
+        self.engine = create_engine(
+            Environment.MYSQL_ADDRESS,
+            pool_size=5,
+            max_overflow=10,
+            pool_timeout=30,
+            pool_recycle=3600,
+            connect_args={"connect_timeout": 5},
         )
 
         self.save_dir = os.path.join(
             Environment.OUTPUTS_PATH,
-            f"{Environment.FILENAME.split(".")[0]}_{datetime.now().strftime("%Y%m%d_%H%M%S")}",
+            f"{Environment.FILENAME.split('.')[0]}_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
         )
         os.makedirs(self.save_dir, exist_ok=True)
 
@@ -82,161 +80,151 @@ class Pipeline:
         ]
 
     @save_output
-    def find_tables(self, raw_text: str):
+    def find_report_info(self, raw_text: str):
         prompt = f"""
-        You are part of a data processing pipeline.
+        You are tasked to find metadata from the text extracted from a PDF file. 
+        The text contains the results of a patient's laboratory tests.
 
-        The following is a page of raw text extracted from a medical PDF:
+        Please take note of the following:
+        1. The metadata should contain the report_id, lab_name, date_reported, date_imported, patient_age, gender (gender is an enum if values 'M', 'F', 'O')
+        2. Results can be text or categorical, such as Negative or Positive or Nil or etc.
+        3. For results that are missing, you can fill them with "NULL", but other entries of other columns should be retained.
 
-        ```text
-        {raw_text}
-        ```
+        The output should look like the following JSON format:
 
-        Your task:
-        - Find and return all tables in the raw text
-        - Find the titles that summarise the contents of the tables
-        - Return all columns and rows in the tables
-        - Do not include any summary or other explanations
-        - Do not modify the raw text except removing all chinese characters
-
-        Take note:
-        - Ensure tables have header rows
-        - I am looking for tables that contain measurements of patients
-        - Do not hallucinate or generate any text, only take lines from the raw text
-
-        Output format:
-
-        '''
-        <title for table 1>
-
-        <table 1>
-        '''
-
-        '''
-        <title for table 2>
-
-        <table 2>
-        '''
-        """
-        return self._generate(prompt)
-
-    @save_output
-    def format_tables(self, tables: str):
-        prompt = f"""
-        You are part of a data processing pipeline.
-
-        The following are multiple tables delimited by triple quotes:
-
-        {tables}
-
-        They have the following format:
-        '''
-        <title for table 1>
-
-        <table 1>
-        '''
-
-        '''
-        <title for table 2>
-
-        <table 2>
-        '''
-
-        Your task:
-        - Convert the tables into CSV format
-        - Make the first row the header row
-        - Reorder columns based on the header row
-        - Do not include any summary or other explanations
-
-        Output format:
-        '''
-        <title for table 1>
-
-        <csv of table 1>
-        '''
-
-        '''
-        <title for table 2>
-
-        <csv of table 2>
-        '''
-        """
-        return self._generate(prompt)
-
-    @save_output
-    def parse_tables(self, tables: str):
-        prompt = f"""
-        You are part of a data processing pipeline.
-
-        The following are multiple tables delimited by triple quotes:
-
-        {tables}
-
-        They have the following format:
-        '''
-        <title for table 1>
-
-        <csv of table 1>
-        '''
-
-        '''
-        <title for table 2>
-
-        <csv of table 2>
-        '''
-
-        Your task:
-        - Return the tables in JSON format described below
-        - Do not include any summary or other explanations
-
-        JSON format:
         {{
-            "tables": [
-                {{
-                    "title": "<title for table 1>",
-                    "table": [
-                        [...],
-                        [...],
-                        ...
-                    ]
-                }},
-                {{
-                    "title": "<title for table 2>",
-                    "table": [
-                        [...],
-                        [...],
-                        ...
-                    ]
-                }},
-                ...
-            ]
+            "report_id": "XXX",
+            "lab_name": "XXX",
+            "date_reported": "XXX",
+            "date_imported": "XXX",
+            "patient_age": "XXX",
+            "gender": "M"
         }}
+
+        Respect the following datatypes:
+
+        {{
+            "report_id": "VARCHAR",
+            "lab_name": "VARCHAR",
+            "date_reported": "DATE",
+            "date_imported": "DATE",
+            "patient_age": "INT",
+            "gender": "ENUM('M', 'F', 'O')"
+        }}
+
+        Return only the JSON with no additional summary or explanations.
+
+        Here is the text:
+        {raw_text}
         """
         return self._generate(prompt, json=True)
 
-    def to_dataframes(self, tables: str):
-        dfs = json.loads(tables)["tables"]
-        for df in dfs:
-            df["table"] = pd.DataFrame(df["table"])
-        return dfs
+    @save_output
+    def find_tables(self, raw_text: str):
+        prompt = f"""
+        You are tasked to store laboratory test results into a csv format based on the text extracted from a PDF file. 
+        The text contains the results of a patient's laboratory tests.
 
-    def query_loinc(self, category: str, test: str, unit: str) -> str:
+        Please take note of the following:
+        1. The data should contain the category, subcategory, test, result columns. These values should remain as is. Subcategory can be empty.
+        2. There will be values that contain power of 10, keep it as is.
+        3. Results can be text or categorical, such as Negative or Positive or Nil or etc.
+        4. Some tests would have both absolute (ABS) values and percentage (PCT) values. You should only retain the absolute values.
+        5. There would be non-english content, like Chinese as well, these can be ignored.
+        6. The category, subcategory, test, result may not be in the correct order in the text.
+        7. There is also a possibility that the text may contain errors or missing values.
+        8. There is also a possibility that the text may contain multiple categories and subcategories.
+        9. There may be letters such as "H" or "L" in front of some values, these should be removed.
+        10. For results that are missing, you can fill them with "N/A", but other entries of other columns should be retained.
+        11. Reference ranges, which usually have values between 2 parentheses, can be ignored.
+        12. If the text does not contain any lab test results, answer nothing. 
+        13. You should attach results with their respective units mentioned in the text, if applicable.
+
+        The output should look like the following CSV format:
+
+        category,subcategory,test,result
+        HAEMATOLOGY,,Haemogoblin,13.9g/dL
+        LIPIDS,,Total Cholesterol,5.7mmol/L
+        HAEMATOLOGY,Differential Count,Neutrophils,4.76*10^9/L
+
+        Finally, return only the csv with the following headers:
+        "category,subcategory,test,result" 
+        Return only the csv with no additional summary or explanations.
+
+        Here is the text:
+        {raw_text}
+        """
+        return self._generate(prompt)
+
+    def to_dataframe(self, data: str):
+        return pd.read_csv(StringIO(data))
+
+    def query_loinc(self, test) -> str:
         """
         Combine metadata of an extracted row from a table and query the vector database for the associated LOINC.
         """
-        query = f"{category},{test}. Units: {unit}"
-        result = self.collection.get(query)  # TODO: fix this
-        return result
+        query = f"{test['category']},{test['subcategory']},{test['name']}. Units: {test['unit']}"
+        return self.collection.query(query_texts=query)
 
-    def insert_records(self, loinc: str, data: str):
-        # TODO: insert report, insert tests
-        sql_query = text("%s")
-        with self.session() as session:
-            session.execute(sql_query, [loinc, data])
-        pass
+    def insert_report(self, report):
+        report = {k: v if v != "NULL" else None for k, v in report.items()}
+        sql_query = text("""
+        INSERT INTO reports (
+            report_id,
+            lab_name,
+            date_reported,
+            date_imported,
+            patient_age,
+            gender
+        ) VALUES (
+            :report_id,
+            :lab_name,
+            :date_reported,
+            :date_imported,
+            :patient_age,
+            :gender
+        )
+        """)
+        with self.engine.connect() as connection:
+            res = connection.execute(sql_query, report)
+        return res.lastrowid
+
+    def insert_test(self, test, loinc):
+        sql_query = text("""
+        INSERT INTO tests (
+            report_id,
+            name,
+            category,
+            subcategory,
+            result,
+            unit,
+            loinc
+        ) VALUES (
+            UUID_TO_BIN(:report_id),
+            :name,
+            :category,
+            :subcategory,
+            :result,
+            :unit,
+            :loinc
+        )
+        """)
+        with self.engine() as session:
+            session.execute(
+                sql_query,
+                {
+                    "report_id": test["report_id"],
+                    "test": test["test"],
+                    "category": test["category"],
+                    "subcategory": test["subcategory"],
+                    "result": test["result"],
+                    "unit": test["unit"],
+                    "loinc": loinc,
+                },
+            )
 
     def _generate(self, prompt: str, json=False):
-        return self.ollama.generate(
+        response = self.ollama.generate(
             model=Environment.OLLAMA_MODEL,
             prompt=prompt,
             format="json" if json else "",
@@ -244,3 +232,7 @@ class Pipeline:
                 "temperature": 0.0,
             },
         )["response"]
+        if json:
+            return j.loads(response)
+        else:
+            return response

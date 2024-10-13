@@ -6,17 +6,18 @@ CREATE TABLE IF NOT EXISTS reports (
     date_imported DATE,
     patient_age INT,
     gender ENUM('M', 'F', 'O'),
-    patient_id VARCHAR(255),
     PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS tests (
-    report_id BINARY(16),
     id BINARY(16) DEFAULT (UUID_TO_BIN(UUID())),
-    test_name VARCHAR(255),
+    report_id BINARY(16),
+    name VARCHAR(255),
     category VARCHAR(255),
-    test_result VARCHAR(255),
-    loinc_code VARCHAR(255),
-    PRIMARY KEY (report_id, id),
+    subcategory VARCHAR(255),
+    result VARCHAR(255),
+    unit VARCHAR(255),
+    loinc VARCHAR(255),
+    PRIMARY KEY (id),
     FOREIGN KEY (report_id) REFERENCES reports(id) ON DELETE CASCADE
 );
