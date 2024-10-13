@@ -1,6 +1,6 @@
-chromadb-client
+chromadb
 ollama
 pandas
-pymysql
+psycopg2
 pypdf
 sqlalchemy

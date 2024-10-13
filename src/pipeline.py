@@ -7,7 +7,6 @@ from io import StringIO
 import chromadb
 import ollama
 import pandas as pd
-import pymysql
 from pypdf import PdfReader
 from sqlalchemy import create_engine, text
 
@@ -29,8 +28,6 @@ def save_output(func):
 
 class Pipeline:
     def __init__(self):
-        pymysql.install_as_MySQLdb()
-
         self.document = PdfReader(Environment.DOCUMENT_PATH)
 
         self.ollama = ollama.Client(host=Environment.OLLAMA_ADDRESS)
@@ -43,7 +40,7 @@ class Pipeline:
         )
 
         self.engine = create_engine(
-            Environment.MYSQL_ADDRESS,
+            Environment.POSTGRES_ADDRESS,
             pool_size=5,
             max_overflow=10,
             pool_timeout=30,
@@ -126,7 +123,7 @@ class Pipeline:
         The text contains the results of a patient's laboratory tests.
 
         Please take note of the following:
-        1. The data should contain the category, subcategory, test, result columns. These values should remain as is. Subcategory can be empty.
+        1. The data should contain the category, subcategory, test, result, unit columns. These values should remain as is. Subcategory can be empty.
         2. There will be values that contain power of 10, keep it as is.
         3. Results can be text or categorical, such as Negative or Positive or Nil or etc.
         4. Some tests would have both absolute (ABS) values and percentage (PCT) values. You should only retain the absolute values.
@@ -142,13 +139,13 @@ class Pipeline:
 
         The output should look like the following CSV format:
 
-        category,subcategory,test,result
-        HAEMATOLOGY,,Haemogoblin,13.9g/dL
-        LIPIDS,,Total Cholesterol,5.7mmol/L
-        HAEMATOLOGY,Differential Count,Neutrophils,4.76*10^9/L
+        category,subcategory,test,result,unit
+        HAEMATOLOGY,,Haemogoblin,13.9,g/dL
+        LIPIDS,,Total Cholesterol,5.7,mmol/L
+        HAEMATOLOGY,Differential Count,Neutrophils,4.76*10^9,/L
 
         Finally, return only the csv with the following headers:
-        "category,subcategory,test,result" 
+        "category,subcategory,test,result,unit"
         Return only the csv with no additional summary or explanations.
 
         Here is the text:
@@ -163,8 +160,8 @@ class Pipeline:
         """
         Combine metadata of an extracted row from a table and query the vector database for the associated LOINC.
         """
-        query = f"{test['category']},{test['subcategory']},{test['name']}. Units: {test['unit']}"
-        return self.collection.query(query_texts=query)
+        query = f"{test['category']},{test['subcategory']},{test['test']}. Units: {test['unit']}"
+        return self.collection.query(query_texts=query, n_results=1)["ids"][0][0]
 
     def insert_report(self, report):
         report = {k: v if v != "NULL" else None for k, v in report.items()}
@@ -183,13 +180,15 @@ class Pipeline:
             :date_imported,
             :patient_age,
             :gender
-        )
+        ) RETURNING
+            id
+        ;
         """)
         with self.engine.connect() as connection:
             res = connection.execute(sql_query, report)
-        return res.lastrowid
+        return res.fetchone()[0]
 
-    def insert_test(self, test, loinc):
+    def insert_test(self, test, report_id, loinc):
         sql_query = text("""
         INSERT INTO tests (
             report_id,
@@ -200,21 +199,23 @@ class Pipeline:
             unit,
             loinc
         ) VALUES (
-            UUID_TO_BIN(:report_id),
+            :report_id,
             :name,
             :category,
             :subcategory,
             :result,
             :unit,
             :loinc
-        )
+        ) RETURNING
+            id
+        ;
         """)
-        with self.engine() as session:
-            session.execute(
+        with self.engine.connect() as connection:
+            connection.execute(
                 sql_query,
                 {
-                    "report_id": test["report_id"],
-                    "test": test["test"],
+                    "report_id": report_id,
+                    "name": test["test"],
                     "category": test["category"],
                     "subcategory": test["subcategory"],
                     "result": test["result"],

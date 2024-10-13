@@ -17,9 +17,11 @@ def main():
     tables_dataframe = pipeline.to_dataframe(tables)
     print(tables_dataframe.head())
 
-    for test in tables_dataframe:
+    for _, test in tables_dataframe.iterrows():
+        print("test", test)
         loinc = pipeline.query_loinc(test)
-        pipeline.insert_test(test, loinc)
+        print("loinc", loinc)
+        pipeline.insert_test(test, report_id, loinc)
         break
 
 

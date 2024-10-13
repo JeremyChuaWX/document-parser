@@ -16,19 +16,19 @@ services:
       - $OUTPUTS_PATH:/app/outputs
 
   sql_db:
+    command: ["postgres", "-c", "log_statement=all"]
     container_name: sql_db
     env_file: .env
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "$MYSQL_USER", "--password=$MYSQL_PASSWORD"]
+      test: ["CMD-SHELL", "pg_isready -d $POSTGRES_ADDRESS"]
       interval: 10s
       timeout: 5s
-      retries: 5
-    image: mysql
+      retries: 10
+    image: postgres:alpine
     ports:
-      - "3306:3306"
-    profiles: [app,migrate]
+      - "5432:5432"
     volumes:
-      - $SQL_DB_DATA_PATH:/var/lib/mysql
+      - $SQL_DB_DATA_PATH:/var/lib/postgresql/data
 
   sql_db.migrate:
     command: ["-path", "/migrations", "-database", "$SQL_DB_MIGRATE_URI", "up"]

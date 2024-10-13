@@ -1,17 +1,24 @@
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'gender_enum') THEN
+        CREATE TYPE gender_enum AS ENUM ('M', 'F', 'O');
+    END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS reports (
-    id BINARY(16) DEFAULT (UUID_TO_BIN(UUID())),
+    id UUID DEFAULT gen_random_uuid(),
     report_id VARCHAR(255),
     lab_name VARCHAR(255),
     date_reported DATE,
     date_imported DATE,
     patient_age INT,
-    gender ENUM('M', 'F', 'O'),
+    gender gender_enum,
     PRIMARY KEY (id)
 );
 
 CREATE TABLE IF NOT EXISTS tests (
-    id BINARY(16) DEFAULT (UUID_TO_BIN(UUID())),
-    report_id BINARY(16),
+    id UUID DEFAULT gen_random_uuid(),
+    report_id UUID,
     name VARCHAR(255),
     category VARCHAR(255),
     subcategory VARCHAR(255),

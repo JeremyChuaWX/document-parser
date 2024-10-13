@@ -9,5 +9,5 @@ class Environment:
     OLLAMA_MODEL = os.environ["OLLAMA_MODEL"]
     CHROMA_HOST = os.environ["CHROMA_HOST"]
     CHROMA_COLLECTION = os.environ["CHROMA_COLLECTION"]
-    MYSQL_ADDRESS = os.environ["MYSQL_ADDRESS"]
+    POSTGRES_ADDRESS = os.environ["POSTGRES_ADDRESS"]
     DOCUMENT_PATH = os.path.join(ARTIFACTS_PATH, FILENAME)
