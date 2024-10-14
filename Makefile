@@ -3,14 +3,14 @@ export
 
 .PHONY: setup
 setup:
-	echo "creating artifacts and outputs directories ..."
-	mkdir artifacts outputs
-	echo "initialising example .env file ..."
-	cp .env.example .env
+	mkdir ${ARTIFACTS_PATH} ${OUTPUTS_PATH}
 
 .PHONY: migrate
 migrate:
-	docker compose --profile migrate up --build
+	docker compose --profile migrate up --build -d
+	docker compose wait sql_db.migrate vector_db.migrate
+	docker compose --profile migrate down --remove-orphans --volumes
+	docker image prune -f
 
 .PHONY: ollama
 ollama:

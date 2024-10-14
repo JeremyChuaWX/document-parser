@@ -25,6 +25,7 @@ services:
       timeout: 5s
       retries: 10
     image: postgres:alpine
+    profiles: [app,migrate]
     ports:
       - "5432:5432"
     volumes:
