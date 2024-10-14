@@ -17,7 +17,10 @@ def save_output(func):
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         result = func(self, *args, **kwargs)
-        file = os.path.join(self.save_dir, f"{func.__name__}.log")
+        file = os.path.join(
+            self.save_dir,
+            f"{func.__name__}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log",
+        )
         with open(file, "w") as f:
             f.write(result if isinstance(result, str) else str(result))
             print(f"saved: {file}")
@@ -184,7 +187,7 @@ class Pipeline:
             id
         ;
         """)
-        with self.engine.connect() as connection:
+        with self.engine.begin() as connection:
             res = connection.execute(sql_query, report)
         return res.fetchone()[0]
 
@@ -210,7 +213,7 @@ class Pipeline:
             id
         ;
         """)
-        with self.engine.connect() as connection:
+        with self.engine.begin() as connection:
             connection.execute(
                 sql_query,
                 {

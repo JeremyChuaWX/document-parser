@@ -1,4 +1,5 @@
 artifacts/
+cache/
 outputs/
 sql_db_data/
 vector_db_data/

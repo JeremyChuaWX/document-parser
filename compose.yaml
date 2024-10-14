@@ -14,6 +14,7 @@ services:
     volumes:
       - $ARTIFACTS_PATH:/app/artifacts
       - $OUTPUTS_PATH:/app/outputs
+      - $CACHE_PATH:/root/.cache/chroma/onnx_models
 
   sql_db:
     command: ["postgres", "-c", "log_statement=all"]

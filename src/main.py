@@ -1,3 +1,4 @@
+import gc
 from pipeline import Pipeline
 
 
@@ -13,16 +14,19 @@ def main():
     report_id = pipeline.insert_report(report)
     print("report_id:", report_id, "\n\n")
 
-    tables = pipeline.find_tables(pages[0])
-    tables_dataframe = pipeline.to_dataframe(tables)
-    print(tables_dataframe.head())
+    for page in pages:
+        tables = pipeline.find_tables(page)
+        tables_dataframe = pipeline.to_dataframe(tables)
+        print(tables_dataframe.head())
 
-    for _, test in tables_dataframe.iterrows():
-        print("test", test)
-        loinc = pipeline.query_loinc(test)
-        print("loinc", loinc)
-        pipeline.insert_test(test, report_id, loinc)
-        break
+        for _, test in tables_dataframe.iterrows():
+            print("test", test)
+            loinc = pipeline.query_loinc(test)
+            print("loinc", loinc)
+            pipeline.insert_test(test, report_id, loinc)
+
+        del tables, tables_dataframe
+        gc.collect()
 
 
 if __name__ == "__main__":
