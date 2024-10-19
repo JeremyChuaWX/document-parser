@@ -9,7 +9,7 @@ CHROMA_COLLECTION = os.environ["CHROMA_COLLECTION"]
 
 FILE_PATH = "loinc.csv"
 COLUMNS = ["LOINC_NUM", "LONG_COMMON_NAME", "EXAMPLE_UNITS"]
-BATCH_SIZE = 100
+BATCH_SIZE = 1000
 
 
 def main():
@@ -23,18 +23,27 @@ def main():
     batches = pd.read_csv(FILE_PATH, usecols=COLUMNS, chunksize=BATCH_SIZE)
 
     for i, batch in enumerate(batches, 1):
-        combined = batch.apply(
-            lambda row: f"{row['LONG_COMMON_NAME']}. Unit: {row['EXAMPLE_UNITS']}",
-            axis=1,
+        batch = batch[batch["STATUS"].isin(["ACTIVE", "TRIAL"])]
+        if batch.empty:
+            print(f"batch {i} empty after filtering, skipping ...")
+            continue
+
+        combined = (
+            batch["LONG_COMMON_NAME"] + ". Unit: " + batch["EXAMPLE_UNITS"].fillna("")
         ).tolist()
         ids = batch["LOINC_NUM"].tolist()
+
         collection.add(
             documents=combined,
             ids=ids,
         )
+
         print(f"batch {i} processed, collection count: {collection.count()}")
+
         del combined, ids, batch
-        gc.collect()
+
+        if i % 10 == 0:
+            gc.collect()
 
     print("collection populated")
 
