@@ -1,0 +1,6 @@
+chromadb
+ollama
+pandas
+psycopg2
+pypdf
+sqlalchemy

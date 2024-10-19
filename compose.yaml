@@ -1,0 +1,72 @@
+services:
+  pipeline:
+    build: .
+    container_name: pipeline
+    depends_on:
+      sql_db:
+        condition: service_healthy
+      vector_db:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      FILENAME: $FILENAME
+    profiles: [app]
+    volumes:
+      - $ARTIFACTS_PATH:/app/artifacts
+      - $OUTPUTS_PATH:/app/outputs
+      - $CACHE_PATH:/root/.cache/chroma/onnx_models
+
+  sql_db:
+    command: ["postgres", "-c", "log_statement=all"]
+    container_name: sql_db
+    env_file: .env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $POSTGRES_ADDRESS"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    image: postgres:alpine
+    profiles: [app,migrate]
+    ports:
+      - "5432:5432"
+    volumes:
+      - $SQL_DB_DATA_PATH:/var/lib/postgresql/data
+
+  sql_db.migrate:
+    command: ["-path", "/migrations", "-database", "$SQL_DB_MIGRATE_URI", "up"]
+    container_name: sql_db.migrate
+    depends_on:
+      sql_db:
+        condition: service_healthy
+    image: migrate/migrate
+    profiles: [migrate]
+    volumes:
+      - $SQL_DB_MIGRATIONS_PATH:/migrations
+
+  vector_db:
+    container_name: vector_db
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=TRUE
+    healthcheck:
+      test: [ "CMD", "/bin/bash", "-c", "cat < /dev/null > /dev/tcp/localhost/8000" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    image: chromadb/chroma
+    ports:
+      - "8000:8000"
+    profiles: [app,migrate]
+    volumes:
+      - $VECTOR_DB_DATA_PATH:/chroma/chroma
+
+  vector_db.migrate:
+    build: ./scripts/vector_db_migrate/
+    container_name: vector_db.migrate
+    depends_on:
+      vector_db:
+        condition: service_healthy
+    env_file: .env
+    profiles: [migrate]
+    volumes:
+      - $ARTIFACTS_PATH:/app/artifacts
