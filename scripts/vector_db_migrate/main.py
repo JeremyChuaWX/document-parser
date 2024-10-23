@@ -6,8 +6,8 @@ import pandas as pd
 
 CHROMA_HOST = os.environ["CHROMA_HOST"]
 CHROMA_COLLECTION = os.environ["CHROMA_COLLECTION"]
+FILE_PATH = os.environ["FILE_PATH"]
 
-FILE_PATH = "loinc.csv"
 COLUMNS = ["LOINC_NUM", "LONG_COMMON_NAME", "EXAMPLE_UNITS"]
 BATCH_SIZE = 1000
 
